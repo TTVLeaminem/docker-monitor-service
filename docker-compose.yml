@@ -1,25 +1,6 @@
 version: '3.8'
 
 services:
-  docker-tunnel:
-    image: alpine/socat:latest
-    container_name: docker_tunnel
-    restart: unless-stopped
-    command: >
-      sh -c "
-        apk add --no-cache openssh-client &&
-        mkdir -p /root/.ssh &&
-        cp /root/.ssh/id_rsa_host /root/.ssh/id_rsa 2>/dev/null || true &&
-        chmod 600 /root/.ssh/id_rsa &&
-        ssh-keyscan -H ${REMOTE_DOCKER_HOST} >> /root/.ssh/known_hosts 2>/dev/null &&
-        socat TCP-LISTEN:2376,fork,reuseaddr 
-          EXEC:'ssh -i /root/.ssh/id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${REMOTE_DOCKER_USER}@${REMOTE_DOCKER_HOST} socat STDIO UNIX-CONNECT:/var/run/docker.sock'
-      "
-    volumes:
-      - /root/.ssh:/root/.ssh:ro
-    networks:
-      - monitor_network
-
   monitor:
     build:
       context: .
@@ -32,13 +13,13 @@ services:
       - MONITOR_INTERVAL=${MONITOR_INTERVAL:-60}
       - MONITOR_STATE_FILE=${MONITOR_STATE_FILE:-/tmp/docker-monitor-state.json}
       - MONITORED_CONTAINERS=${MONITORED_CONTAINERS:-}
-      - DOCKER_HOST=tcp://docker-tunnel:2376
+      - REMOTE_DOCKER_HOST=${REMOTE_DOCKER_HOST:-}
+      - REMOTE_DOCKER_USER=${REMOTE_DOCKER_USER:-root}
     volumes:
       - monitor_state:/tmp
-    networks:
-      - monitor_network
-    depends_on:
-      - docker-tunnel
+      - /root/.ssh:/root/.ssh:ro
+    network_mode: host
+    # Используем host network для доступа к SSH туннелю
 
 volumes:
   monitor_state:

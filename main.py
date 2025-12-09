@@ -173,14 +173,14 @@ class DockerMonitor:
         self._event_queue = queue.Queue()
         
         try:
-            # Проверяем, нужно ли подключаться к удаленному Docker
+            # Проверяем, нужно ли подключаться к удаленному Docker через SSH
             remote_docker_host = os.getenv('REMOTE_DOCKER_HOST')
             if remote_docker_host:
                 remote_user = os.getenv('REMOTE_DOCKER_USER', 'root')
-                # Формируем DOCKER_HOST для SSH подключения
+                # Используем SSH для подключения к удаленному Docker
                 # Формат: ssh://user@host
                 docker_host = f"ssh://{remote_user}@{remote_docker_host}"
-                logger.info(f"Подключение к удаленному Docker: {docker_host}")
+                logger.info(f"Подключение к удаленному Docker через SSH: {docker_host}")
                 self.docker_client = docker.DockerClient(base_url=docker_host)
             else:
                 self.docker_client = docker.from_env()
