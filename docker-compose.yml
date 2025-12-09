@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: docker_monitor
+    restart: unless-stopped
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - MONITOR_INTERVAL=${MONITOR_INTERVAL:-60}
+      - MONITOR_STATE_FILE=${MONITOR_STATE_FILE:-/tmp/docker-monitor-state.json}
+      - MONITORED_CONTAINERS=${MONITORED_CONTAINERS:-}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - monitor_state:/tmp
+    networks:
+      - monitor_network
+
+volumes:
+  monitor_state:
+
+networks:
+  monitor_network:
+    driver: bridge
+
