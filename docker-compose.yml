@@ -1,6 +1,35 @@
 version: '3.8'
 
 services:
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: docker_socket_proxy
+    restart: unless-stopped
+    environment:
+      - CONTAINERS=1
+      - IMAGES=1
+      - AUTH=1
+      - BUILD=1
+      - COMMIT=1
+      - CONFIGS=1
+      - DISTRIBUTION=1
+      - EXEC=1
+      - NETWORKS=1
+      - NODES=1
+      - PLUGINS=1
+      - SECRETS=1
+      - SERVICES=1
+      - SESSION=1
+      - SWARM=1
+      - SYSTEM=1
+      - TASKS=1
+      - VOLUMES=1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - monitor_network
+    # Прокси для локального Docker (если нужен)
+
   monitor:
     build:
       context: .
@@ -13,11 +42,18 @@ services:
       - MONITOR_INTERVAL=${MONITOR_INTERVAL:-60}
       - MONITOR_STATE_FILE=${MONITOR_STATE_FILE:-/tmp/docker-monitor-state.json}
       - MONITORED_CONTAINERS=${MONITORED_CONTAINERS:-}
+      - DOCKER_HOST=${DOCKER_HOST:-unix:///var/run/docker.sock}
+      - REMOTE_DOCKER_HOST=${REMOTE_DOCKER_HOST:-}
+      - REMOTE_DOCKER_USER=${REMOTE_DOCKER_USER:-root}
+      - REMOTE_DOCKER_SSH_KEY=${REMOTE_DOCKER_SSH_KEY:-/root/.ssh/id_rsa}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - monitor_state:/tmp
+      - /root/.ssh:/root/.ssh:ro
     networks:
       - monitor_network
+    depends_on:
+      - docker-socket-proxy
 
 volumes:
   monitor_state:

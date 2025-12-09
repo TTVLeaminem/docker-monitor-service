@@ -173,8 +173,18 @@ class DockerMonitor:
         self._event_queue = queue.Queue()
         
         try:
-            self.docker_client = docker.from_env()
-            logger.info("Подключение к Docker API установлено")
+            # Проверяем, нужно ли подключаться к удаленному Docker
+            remote_docker_host = os.getenv('REMOTE_DOCKER_HOST')
+            if remote_docker_host:
+                remote_user = os.getenv('REMOTE_DOCKER_USER', 'root')
+                # Формируем DOCKER_HOST для SSH подключения
+                # Формат: ssh://user@host
+                docker_host = f"ssh://{remote_user}@{remote_docker_host}"
+                logger.info(f"Подключение к удаленному Docker: {docker_host}")
+                self.docker_client = docker.DockerClient(base_url=docker_host)
+            else:
+                self.docker_client = docker.from_env()
+                logger.info("Подключение к локальному Docker API установлено")
         except DockerException as e:
             logger.error(f"Ошибка подключения к Docker: {e}")
             raise
